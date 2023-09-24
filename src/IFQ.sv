@@ -33,9 +33,10 @@ wire w_cache_en;
 wire w_wr_fifo;
 wire w_rd_fifo;
 
-wire new_pc;
-wire next_pc;
-wire curr_pc;
+wire w_pc4_en;
+wire [31:0] new_pc;
+wire [31:0] next_pc;
+wire [31:0] curr_pc;
 
 mux_4to1 fifo_write(
     .a(dout[31:0]),
@@ -43,7 +44,7 @@ mux_4to1 fifo_write(
     .c(dout[95:64]),
     .d(dout[127:96]),
 
-    .sel(read_pointer[1:0]),
+    .sel(write_pointer[1:0]),
 
     .o(inst_to_fifo)
 );
@@ -54,14 +55,14 @@ mux_4to1 fifo_bypass(
     .c(dout[95:64]),
     .d(dout[127:96]),
 
-    .sel(read_pointer[1:0]),
+    .sel(write_pointer[1:0]),
 
     .o(bypass_inst)
 );
 
 IFQ_ctrl q_ctrl(
     .clk(clk),
-    .reset(reset),
+    .reset(rst),
 
     .dout_valid(dout_valid),
     .rd_enable(inst_rd_en),
@@ -69,15 +70,16 @@ IFQ_ctrl q_ctrl(
     .fifo_empty(fifo_empty),
     .fifo_full(fifo_full),
 
+    .pc4_en(w_pc4_en),
     .cache_en(w_cache_en),
     .bypass(bypass_sel),
     .pop_fifo(w_rd_fifo),
     .push_fifo(w_wr_fifo)
 );
 
-FIFO #( .Depth_Of_FIFO(16) ) i_queue(
+FIFO_Mod #( .Depth_Of_FIFO(16) ) i_queue(
     .clk(clk),
-    .reset(reset),
+    .reset(rst),
 
     .flush(jmp_branch_valid),
     .offset(jmp_branch_address[3:2]),
@@ -115,14 +117,26 @@ mux_2to1 pc_mux(
 
 pc_reg pc(
     .clk(clk),
-	.reset(reset),
+	.reset(rst),
 	.NewPC(new_pc),
 	.en(1'b1),
 
 	.PCValue(curr_pc)
 );
 
+pc_reg mirror_pc(
+    .clk(clk),
+    .reset(rst),
+    .NewPC(new_pc),
+    .en(w_pc4_en),
+
+    .PCValue(pc_in)
+);
+
 assign cache_rd_en = w_cache_en & ~fifo_full;
 assign next_pc = curr_pc + 4'h1;
+//assign pc_in = curr_pc;
+assign empty = fifo_empty;
+
 
 endmodule

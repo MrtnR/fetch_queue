@@ -1,2 +1,4 @@
 /tb/transcript
 /tb/work
+*.wlf
+/tb/wlf*

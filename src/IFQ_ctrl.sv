@@ -8,6 +8,7 @@ module IFQ_ctrl(
     input fifo_empty,
     input fifo_full,
 
+    output logic pc4_en,
     output logic cache_en,
     output logic bypass,
     output logic pop_fifo,
@@ -27,11 +28,24 @@ localparam DO_FLUSH = 'h7;
 logic [4:0] state;
 logic [4:0] next;
 
+logic [3:0] pc_cnt;
+
 always_ff@(posedge clk, negedge reset)begin
-    if(reset)
+    if(~reset)
         state <= RST;
     else
         state <= next;
+end
+
+always_ff@(posedge clk, negedge reset)begin
+    if(~reset)
+        pc_cnt <= 4'h0;
+    else begin
+        if(state != RST && state != IDLE)
+            pc_cnt <= pc_cnt + 4'h1;
+        if( pc4_en )
+            pc_cnt <= 4'h0;
+    end
 end
 
 always_comb begin
@@ -55,7 +69,7 @@ always_comb begin
             next = INST3;
         end
         INST3: begin
-            next = INST3;
+            next = IDLE;
         end
         IDLE: begin
             if(fifo_full)
@@ -82,17 +96,17 @@ always_comb begin
         OUT_RST: begin
             cache_en = 1'b1;
             bypass = 1'b1;
-            push_fifo = 1'b1;           
+            push_fifo = 1'b1;        
         end
         INST0: begin
             cache_en = 1'b1;
             bypass = 1'b0;
-            push_fifo = 1'b1;            
+            push_fifo = 1'b1;         
         end
         INST1: begin
             cache_en = 1'b0;
             bypass = 1'b0;
-            push_fifo = 1'b1;          
+            push_fifo = 1'b1;       
         end
         INST2: begin
             cache_en = 1'b0;
@@ -118,6 +132,7 @@ always_comb begin
     endcase
 end
 
+assign pc4_en = ( pc_cnt == 4'h4) ? 1'b1 : 1'b0;
 assign pop_fifo = rd_enable;
 
 endmodule

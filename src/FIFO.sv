@@ -41,11 +41,11 @@ bin_counter_load #(.DW(countWD)) push_Counter (
     .rst(reset),
     .enb(push),
     .ld(flush),
-    .ld_val('h0),
+    .ld_val(5'h0),
     .count(pushCount)
 );
 
-sdp_dc_ram #( .Word_Length(DATA_WIDTH), .W_DEPTH(Depth_Of_FIFO)) ram
+sdp_sc_ram #( .Word_Length(DATA_WIDTH), .W_DEPTH(Depth_Of_FIFO)) ram
 (
     .clk(clk),
     .we(push_and_NoFull),
