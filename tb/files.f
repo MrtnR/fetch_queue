@@ -1,4 +1,5 @@
 ../src/bin_counter_load.sv
+../src/pc_reg.sv
 ../src/sdp_sc_ram.sv
 ../src/FIFO.sv
 ../src/mux_4to1.sv

@@ -66,7 +66,9 @@ always_comb begin
                 next = IDLE;
         end
 
-        default: 
+        default: begin
+            next = IDLE;
+        end
     endcase
 end
 

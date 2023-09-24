@@ -32,7 +32,7 @@ bin_counter_load #(.DW(countWD)) pull_Counter (
     .rst(reset),
     .enb(pop),
     .ld(flush),
-    .ld_val({3'b000, offset})
+    .ld_val({3'b000, offset}),
     .count(popCount)
 );
 
@@ -41,7 +41,7 @@ bin_counter_load #(.DW(countWD)) push_Counter (
     .rst(reset),
     .enb(push),
     .ld(flush),
-    .ld_val('h0)
+    .ld_val('h0),
     .count(pushCount)
 );
 

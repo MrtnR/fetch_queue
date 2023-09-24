@@ -3,15 +3,15 @@ module i_cache(
     input rd_en,
     input abort,
 
-    output [127:0] Dout,
-    output Dout_valid
+    output logic [127:0] Dout,
+    output logic Dout_valid
 );
 
 reg [31:0] cache [255:0];
 
 always @ (pc_in, rd_en) begin
     if(rd_en) begin
-        Dout = {cache[pc_in+'3],cache[pc_in+'2],cache[pc_in+'1],cache[pc_in]};
+        Dout = {cache[pc_in+'h3],cache[pc_in+'h2],cache[pc_in+'h1],cache[pc_in]};
         Dout_valid = 1'b1;
     end else begin
         Dout_valid = 1'b0;
