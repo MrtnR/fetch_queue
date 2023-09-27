@@ -4,6 +4,8 @@ import tb_package::*;
 
     IFQ_if top_if();
     test1 t1;
+    test2 t2;
+    test3 t3;
 
     i_cache dut_cache(
         .pc_in(top_if.i_cache_pc),
@@ -56,8 +58,14 @@ import tb_package::*;
             t1.do_test();
        `elsif TEST_2
             //Instantiate and setup test 1
+            t2 = new("Test 2: Read IFQ Continuosly", top_if);
+            t2.init_if();
+            t2.do_test();
        `elsif TEST_3
-            //Instantiate and setup test 1
+            //Instantiate and setup test 3
+            t3 = new("Test 3: Request branch after reads", top_if);
+            t3.init_if();
+            t3.do_test();
        `else
             //Throw error message and end
        `endif
