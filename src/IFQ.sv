@@ -136,6 +136,7 @@ pc_reg mirror_pc(
     .PCValue(pc_in)
 );
 
+assign cache_abort = 1'b0;
 assign cache_rd_en = w_cache_en & ~fifo_full;
 assign next_pc = curr_pc + 4'h1;
 //assign pc_in = curr_pc;

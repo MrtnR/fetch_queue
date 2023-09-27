@@ -7,7 +7,7 @@ virtual IFQ_if vif;
 
 function new(string name = "Test 1", virtual IFQ_if _if);
     this.name = name;
-    vif = _if;
+    this.vif = _if;
 endfunction
 
 task init_if();

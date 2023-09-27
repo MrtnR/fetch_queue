@@ -7,6 +7,8 @@ module i_cache(
     output logic Dout_valid
 );
 
+localparam PC_UPPER_ADDR = 32'h 3FF;
+
 reg [31:0] cache [255:0];
 wire [15:0] pc_read;
 wire [15:0] dout_cl_0_addr;
@@ -39,7 +41,8 @@ initial begin
     int i;
     for (int i = 0; i < 256; i+=12) begin
        
-        cache[i+0] = 32'hffff_ffff;   // Invalid instruction
+//      cache[i+0] = 32'hffff_ffff;   // Invalid instruction
+        cache[i+0] = $urandom();      // Valid instruction
         cache[i+1] = $urandom();      // Valid instruction
         cache[i+2] = $urandom();      // Valid instruction
         cache[i+3] = $urandom();      // Valid instruction
@@ -51,7 +54,8 @@ initial begin
         
         cache[i+8] = $urandom();      // Valid instruction
         cache[i+9] = $urandom();      // Valid instruction
-        cache[i+10] = 32'h0;          // Invalid instruction
+//      cache[i+10] = 32'h0;          // Invalid instruction
+        cache[i+10] = $urandom();     // Valid instruction
         cache[i+11] = $urandom();     // Valid instruction
         
     end
@@ -59,7 +63,7 @@ end
 
 
 // RAM
-always @ (pc_read, rd_en) begin
+always @ (pc_read, rd_en, pc_in) begin
     if(rd_en) begin
                 
         Dout = {dout_cl_3,
@@ -67,18 +71,11 @@ always @ (pc_read, rd_en) begin
                 dout_cl_1,
                 dout_cl_0};
         
-        // Dout_valid when inst != 0s and != ffs
-        if( (dout_cl_3 != 32'h0) &&
-            (dout_cl_2 != 32'h0) &&
-            (dout_cl_1 != 32'h0) &&
-            (dout_cl_0 != 32'h0) &&
-            (dout_cl_3 != 32'hffff_ffff) &&
-            (dout_cl_2 != 32'hffff_ffff) &&
-            (dout_cl_1 != 32'hffff_ffff) &&
-            (dout_cl_0 != 32'hffff_ffff) )
-            Dout_valid = 1'b1;
-        else
+        // Dout_valid when pc_in > Upper PC address
+        if(pc_in > PC_UPPER_ADDR) 
             Dout_valid = 1'b0;
+        else
+            Dout_valid = 1'b1;
             
     end else begin
         Dout_valid = 1'b0;
