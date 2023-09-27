@@ -7,4 +7,6 @@
 ../src/IFQ_ctrl.sv
 ../src/IFQ.sv
 ../src/i_cache.sv
+../tb_src/IFQ_if.sv
+../tb_src/tb_package.sv
 tb_top.sv

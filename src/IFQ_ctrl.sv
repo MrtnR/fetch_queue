@@ -102,7 +102,7 @@ always_comb begin
         end
         INST0: begin
             cache_en = 1'b1;
-            bypass = 1'b0;
+            bypass = (rd_enable) ? 1'b1 : 1'b0;
             push_fifo = 1'b1;
             advance_bypass = (rd_enable) ? 1'b1 : 1'b0;   
         end
