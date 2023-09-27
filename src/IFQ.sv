@@ -13,6 +13,9 @@ module IFQ(
     output [31:0] pc_out,
     output [31:0] inst,
     output empty,
+    `ifdef DEBUG
+    output IFQ_FULL,
+    `endif
     input inst_rd_en,
     input [31:0] jmp_branch_address,
     input jmp_branch_valid
@@ -137,6 +140,9 @@ assign cache_rd_en = w_cache_en & ~fifo_full;
 assign next_pc = curr_pc + 4'h1;
 //assign pc_in = curr_pc;
 assign empty = fifo_empty;
+`ifdef DEBUG
+assign IFQ_FULL = fifo_full;
+`endif
 
 
 endmodule

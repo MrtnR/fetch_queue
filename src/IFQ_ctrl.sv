@@ -30,6 +30,8 @@ logic [4:0] next;
 
 logic [3:0] pc_cnt;
 
+logic advance_bypass;
+
 always_ff@(posedge clk, negedge reset)begin
     if(~reset)
         state <= RST;
@@ -51,33 +53,37 @@ end
 always_comb begin
     case (state)
         RST: begin
-            next = OUT_RST;
-        end
-        OUT_RST: begin
-            if(dout_valid)
-                next = INST1;
-            else
-                next = IDLE;
+            next = INST0;
         end
         INST0: begin
-            next = INST1;
+            if( fifo_full )
+                next = IDLE;
+            else
+                next = INST1;
         end
         INST1: begin
-            next = INST2;
+            if( fifo_full )
+                next = IDLE;
+            else
+                next = INST2;
         end
         INST2: begin
-            next = INST3;
+            if( fifo_full )
+                next = IDLE;
+            else
+                next = INST3;
         end
         INST3: begin
-            next = IDLE;
+            if( fifo_full )
+                next = IDLE;
+            else
+                next = INST0;
         end
         IDLE: begin
-            if(fifo_full)
+            if( fifo_full )
                 next = IDLE;
-            if(fifo_empty || (~fifo_full && ~fifo_empty))
+           else
                 next = INST0;
-            else
-                next = IDLE;
         end
 
         default: begin
@@ -92,47 +98,49 @@ always_comb begin
             cache_en = 1'b0;
             bypass = 1'b0;
             push_fifo = 1'b0;
-        end
-        OUT_RST: begin
-            cache_en = 1'b1;
-            bypass = 1'b1;
-            push_fifo = 1'b1;        
+            advance_bypass= 1'b0;
         end
         INST0: begin
             cache_en = 1'b1;
             bypass = 1'b0;
-            push_fifo = 1'b1;         
+            push_fifo = 1'b1;
+            advance_bypass = (rd_enable) ? 1'b1 : 1'b0;   
         end
         INST1: begin
             cache_en = 1'b0;
             bypass = 1'b0;
-            push_fifo = 1'b1;       
+            push_fifo = 1'b1;
+            advance_bypass= 1'b0;   
         end
         INST2: begin
             cache_en = 1'b0;
             bypass = 1'b0;
             push_fifo = 1'b1;
+            advance_bypass= 1'b0;
         end
         INST3: begin
             cache_en = 1'b0;
             bypass = 1'b0;
             push_fifo = 1'b1;
+            advance_bypass= 1'b0;
         end
         IDLE: begin
             cache_en = 1'b0;
             bypass = 1'b0;
             push_fifo = 1'b0;
+            advance_bypass= 1'b0;
         end
 
         default: begin
             cache_en = 1'b0;
             bypass = 1'b0;
             push_fifo = 1'b0;
+            advance_bypass= 1'b0;
         end
     endcase
 end
 
 assign pc4_en = ( pc_cnt == 4'h4) ? 1'b1 : 1'b0;
-assign pop_fifo = rd_enable;
+assign pop_fifo = advance_bypass|rd_enable;
 
 endmodule
