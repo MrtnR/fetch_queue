@@ -28,7 +28,8 @@ task do_test();
             vif.inst_rd_en = 1'b1;
     end
     #5 vif.inst_rd_en = 1'b0;
-    $display("Test 1: Passed");
+    $display("Test 1: Done");
+    $stop();
 endtask
 
 

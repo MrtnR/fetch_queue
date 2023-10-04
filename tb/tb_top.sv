@@ -43,7 +43,7 @@ import tb_package::*;
         $display("Instruction Fetch Queue + Instruction Cache Testbench");
         top_if.i_clk = 1'b0;
         top_if.rst_n = 1'b0;
-        #10 top_if.rst_n = 1'b1;
+        #15 top_if.rst_n = 1'b1;
     end
 
     initial begin

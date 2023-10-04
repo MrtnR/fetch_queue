@@ -1,5 +1,6 @@
 module bin_counter_load #(
-parameter DW=4
+parameter DW=4,
+parameter INC=1
 )(
 input           clk,
 input           rst,
@@ -16,10 +17,10 @@ always_ff@(posedge clk, negedge rst)begin: counter
     if (!rst)
         count_r     <=  '0;
     else if (enb)
-        count_r     <= count_r + 1'b1;
+        count_r     <= count_r + INC;
     else if (clr)
         count_r     <= '0;
-    else if (ld)
+    else if (ld || (ld && enb))
         count_r     <= ld_val;
 end:counter
 

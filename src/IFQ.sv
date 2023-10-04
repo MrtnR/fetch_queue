@@ -4,7 +4,7 @@ module IFQ(
 
     // To the Instruction cache
     output [31:0] pc_in,
-    output cache_rd_en,
+    output logic cache_rd_en,
     output cache_abort,
     input [127:0] dout,
     input dout_valid,
@@ -23,64 +23,63 @@ module IFQ(
 
 wire [31:0] inst_to_fifo;
 wire [31:0] inst_from_fifo;
-wire [31:0] bypass_inst;
+reg [31:0] bypass_inst;
 wire [4:0] write_pointer;
 wire [4:0] read_pointer;
 
-wire bypass_sel;
-wire fifo_empty;
-wire fifo_full;
+reg r_wr_fifo;
+reg r_rd_fifo;
+wire w_full_fifo;
+wire w_empty_fifo;
 
-wire w_pc_en;
-wire w_cache_en;
-wire w_wr_fifo;
-wire w_rd_fifo;
+reg do_bypass;
 
 wire w_pc4_en;
-wire [31:0] new_pc;
-wire [31:0] next_pc;
-wire [31:0] curr_pc;
+wire [31:0] w_next_pc4;
+wire [31:0] w_next_pc16;
 
-mux_4to1 fifo_write(
-    .a(dout[31:0]),
-    .b(dout[63:32]),
-    .c(dout[95:64]),
-    .d(dout[127:96]),
+always_comb begin
+    if( ~w_full_fifo || w_empty_fifo ) begin
+        cache_rd_en = 1'b1;
+        r_wr_fifo = 1'b1;
+    end
+    if( w_full_fifo ) begin
+        cache_rd_en = 1'b0;
+        r_wr_fifo = 1'b0;
+    end
+end
 
-    .sel(write_pointer[1:0]),
+always_comb begin
+    do_bypass = ( write_pointer == 5'h00 && read_pointer == 5'h00 && inst_rd_en) ? 1'b1 : 1'b0;
+end
 
-    .o(inst_to_fifo)
+always_comb begin
+    case(read_pointer[1:0])
+    2'b00: begin
+        bypass_inst = dout[31:0];
+    end
+    2'b01: begin
+        bypass_inst = dout[63:32];
+    end
+    2'b10: begin
+        bypass_inst = dout[95:64];
+    end
+    2'b11: begin
+        bypass_inst = dout[127:96];
+    end
+    endcase
+end
+
+mux_2to1 inst_bypass(
+    .a(inst_from_fifo),
+    .b(bypass_inst),
+
+    .sel(do_bypass),
+
+    .o(inst)
 );
 
-mux_4to1 fifo_bypass(
-    .a(dout[31:0]),
-    .b(dout[63:32]),
-    .c(dout[95:64]),
-    .d(dout[127:96]),
-
-    .sel(write_pointer[1:0]),
-
-    .o(bypass_inst)
-);
-
-IFQ_ctrl q_ctrl(
-    .clk(clk),
-    .reset(rst),
-
-    .dout_valid(dout_valid),
-    .rd_enable(inst_rd_en),
-    .branch_valid(jmp_branch_valid),
-    .fifo_empty(fifo_empty),
-    .fifo_full(fifo_full),
-
-    .pc4_en(w_pc4_en),
-    .cache_en(w_cache_en),
-    .bypass(bypass_sel),
-    .pop_fifo(w_rd_fifo),
-    .push_fifo(w_wr_fifo)
-);
-
-FIFO_Mod #( .Depth_Of_FIFO(16) ) i_queue(
+FIFO_Mod_Async #( .Depth_Of_FIFO(16) ) i_queue(
     .clk(clk),
     .reset(rst),
 
@@ -88,62 +87,62 @@ FIFO_Mod #( .Depth_Of_FIFO(16) ) i_queue(
     .offset(jmp_branch_address[3:2]),
 
     //Writter
-    .DataInput(inst_to_fifo),
-    .push(w_wr_fifo),
-    .full(fifo_full),
+    .DataInput(dout),
+    .push(r_wr_fifo),
+    .full(w_full_fifo),
     .wp(write_pointer),
 
     //Reading
     .DataOutput(inst_from_fifo),
-    .empty(fifo_empty),
-    .pop(w_rd_fifo),
+    .empty(w_empty_fifo),
+    .pop(inst_rd_en),
     .rp(read_pointer)
 );
 
-mux_2to1 inst_mux(
-    .a(inst_from_fifo),
-    .b(bypass_inst),
-
-    .sel(bypass_sel),
-    
-    .o(inst)
-);
-
-mux_2to1 pc_mux(
-    .a(next_pc),
+mux_2to1 mux_pc4(
+    .a(pc_out + 'h4),
     .b(jmp_branch_address),
 
     .sel(jmp_branch_valid),
     
-    .o(new_pc)
+    .o(w_next_pc4)
 );
 
-pc_reg pc(
+mux_2to1 mux_pc16(
+    .a(pc_in + 'h10),
+    .b(jmp_branch_address),
+
+    .sel(jmp_branch_valid),
+    
+    .o(w_next_pc16)
+);
+
+pc_reg pc_4(
     .clk(clk),
 	.reset(rst),
-	.NewPC(new_pc),
-	.en(1'b1),
+	.NewPC(w_next_pc4),
+	.en(inst_rd_en|jmp_branch_valid),
 
-	.PCValue(curr_pc)
+	.PCValue(pc_out)
 );
 
-pc_reg mirror_pc(
+pc_reg pc_16(
     .clk(clk),
     .reset(rst),
-    .NewPC(new_pc),
-    .en(w_pc4_en),
+    .NewPC(w_next_pc16),
+    .en(cache_rd_en|jmp_branch_valid),
 
     .PCValue(pc_in)
 );
 
 assign cache_abort = 1'b0;
-assign cache_rd_en = w_cache_en & ~fifo_full;
-assign next_pc = curr_pc + 4'h1;
+//assign cache_rd_en = w_cache_en & ~fifo_full;
+//assign next_pc = curr_pc + 4'h1;
 //assign pc_in = curr_pc;
-assign empty = fifo_empty;
+assign empty = w_empty_fifo;
 `ifdef DEBUG
-assign IFQ_FULL = fifo_full;
+assign IFQ_FULL = w_full_fifo;
 `endif
-
+//assign pc_out = curr_pc;
 
 endmodule

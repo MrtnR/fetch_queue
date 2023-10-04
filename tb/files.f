@@ -1,4 +1,5 @@
 ../src/bin_counter_load.sv
+../src/cntr_mod_n_ovf.sv
 ../src/pc_reg.sv
 ../src/sdp_sc_ram.sv
 ../src/FIFO.sv

@@ -8,6 +8,7 @@ module IFQ_ctrl(
     input fifo_empty,
     input fifo_full,
 
+    output logic flush,
     output logic pc4_en,
     output logic cache_en,
     output logic bypass,
@@ -43,104 +44,13 @@ always_ff@(posedge clk, negedge reset)begin
     if(~reset)
         pc_cnt <= 4'h0;
     else begin
-        if(state != RST && state != IDLE)
-            pc_cnt <= pc_cnt + 4'h1;
-        if( pc4_en )
-            pc_cnt <= 4'h0;
+        if(rd_enable)
+            pc_cnt <= (pc4_en || flush) ? 4'h0 : pc_cnt + 4'h1;
     end
 end
 
-always_comb begin
-    case (state)
-        RST: begin
-            next = INST0;
-        end
-        INST0: begin
-            if( fifo_full )
-                next = IDLE;
-            else
-                next = INST1;
-        end
-        INST1: begin
-            if( fifo_full )
-                next = IDLE;
-            else
-                next = INST2;
-        end
-        INST2: begin
-            if( fifo_full )
-                next = IDLE;
-            else
-                next = INST3;
-        end
-        INST3: begin
-            if( fifo_full )
-                next = IDLE;
-            else
-                next = INST0;
-        end
-        IDLE: begin
-            if( fifo_full )
-                next = IDLE;
-           else
-                next = INST0;
-        end
 
-        default: begin
-            next = IDLE;
-        end
-    endcase
-end
-
-always_comb begin
-    case (state)
-        RST: begin
-            cache_en = 1'b0;
-            bypass = 1'b0;
-            push_fifo = 1'b0;
-            advance_bypass= 1'b0;
-        end
-        INST0: begin
-            cache_en = 1'b1;
-            bypass = (rd_enable) ? 1'b1 : 1'b0;
-            push_fifo = 1'b1;
-            advance_bypass = (rd_enable) ? 1'b1 : 1'b0;   
-        end
-        INST1: begin
-            cache_en = 1'b0;
-            bypass = 1'b0;
-            push_fifo = 1'b1;
-            advance_bypass= 1'b0;   
-        end
-        INST2: begin
-            cache_en = 1'b0;
-            bypass = 1'b0;
-            push_fifo = 1'b1;
-            advance_bypass= 1'b0;
-        end
-        INST3: begin
-            cache_en = 1'b0;
-            bypass = 1'b0;
-            push_fifo = 1'b1;
-            advance_bypass= 1'b0;
-        end
-        IDLE: begin
-            cache_en = 1'b0;
-            bypass = 1'b0;
-            push_fifo = 1'b0;
-            advance_bypass= 1'b0;
-        end
-
-        default: begin
-            cache_en = 1'b0;
-            bypass = 1'b0;
-            push_fifo = 1'b0;
-            advance_bypass= 1'b0;
-        end
-    endcase
-end
-
-assign pc4_en = ( pc_cnt == 4'h4) ? 1'b1 : 1'b0;
+assign pc4_en = ( pc_cnt == 4'h3) ? 1'b1 : 1'b0;
 assign pop_fifo = advance_bypass|rd_enable;
 
 endmodule
